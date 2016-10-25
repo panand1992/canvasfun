@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Simple Paint App</title>
+		<style type="text/css">
+			body, html{
+				margin: 0;
+				padding: 0;
+				font-family: "Lucida Sans Unicode", "Lucida Grande", sans-serif;	
+				background: #f1f1f1;
+			}
+			.container{
+				width: 900px;
+				margin: 0 auto;
+			}
+			.container h1{
+				text-align: center;
+				font-weight: normal;
+				font-size: 32px;
+			    line-height: 40px;
+			    margin: 20px;
+			}
+			canvas{
+				background: #fff;
+				width: 600px;
+				height: 400px;
+				margin-left: 150px;
+				clear: both;
+			}
+			.container .clearBtn{
+				text-align: right;
+				padding: 20px 150px;
+			}
+			.container .clearBtn a{
+				display: inline-block;
+				border: 1px solid #ccc;
+				padding: 5px 10px;
+				border-radius: 3px;
+				background: #fff;
+				text-decoration: none;
+				color: #333;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="container">
+			<h1>Simple Paint App</h1>
+			<canvas id="paintCanvas" ondblclick="clearTriangle(event)" onmousedown="startTriangle(event)" onmouseup="finishTriangle()" onmousemove="createTriangle(event)" width="600" height="400"></canvas>
+			<div class="clearBtn">
+				<a href="javascript:void(0)" onclick="clearCanvas()">Clear</a>
+			</div>
+		</div>
+		<script type="text/javascript">
+			var drawTriangle = false;
+			var dragTriangle = false;
+			var slideTriangle = false;
+			var currentTriangle = null;
+			var c = document.getElementById("paintCanvas");
+			var ctx = c.getContext("2d");
+			var triangleData = [];
+			var cX = 0;
+			var cY = 0;
+			var rX = 0;
+			var rY = 0;
+			var colors = ["#e67e22", "#c0392b", "#2980b9", "#2ecc71"];
+
+			function clearCanvas(){
+				ctx.clearRect(0, 0, 600, 400);
+				triangleData = [];
+			}
+			
+			function startTriangle(e){
+				drawTriangle = true;
+				cX = e.clientX - c.offsetLeft;
+				cY = e.clientY - c.offsetTop;
+				for(var i=triangleData.length-1;i>=0;i--){
+					var x1 = triangleData[i].centreX;
+					var x2 = triangleData[i].centreX - ((triangleData[i].radius*3)/4);
+					var x3 = triangleData[i].centreX + ((triangleData[i].radius*3)/4);
+					var y1 = triangleData[i].centreY - triangleData[i].radius;
+					var y2 = triangleData[i].centreY + (triangleData[i].radius/3);
+					var y3 = triangleData[i].centreY + (triangleData[i].radius/3);
+					if(checkPointInTriangle(x1, y1, x2, y2, x3, y3, cX, cY)){
+						currentTriangle = i;
+						drawTriangle = false;
+						slideTriangle = true;
+						break;
+					}
+					else{
+						continue;
+					}
+				}
+
+			}
+
+			function createTriangle(e){
+				if(drawTriangle){
+					if(!dragTriangle){
+						dragTriangle = true;
+						var newTriangle = {};
+						newTriangle.centreX = cX;
+						newTriangle.centreY = cY;
+						newTriangle.color = colors[triangleData.length % 4];
+						triangleData.push(newTriangle);
+					}
+					else{
+						rX = e.clientX - c.offsetLeft;
+						rY = e.clientY - c.offsetTop;
+						triangleData[triangleData.length-1].radius = Math.sqrt(((rX - cX)*(rX - cX)) + ((rY - cY)*(rY - cY)));
+						drawCanvas();
+					}
+				}
+				else if(slideTriangle){
+					triangleData[currentTriangle].centreX = e.clientX - c.offsetLeft;
+					triangleData[currentTriangle].centreY = e.clientY - c.offsetTop;
+					drawCanvas();
+				}
+			}
+
+			function finishTriangle(){
+				drawTriangle = false;
+				dragTriangle = false;
+				slideTriangle = false;
+			}
+
+			function drawCanvas(){
+				ctx.clearRect(0, 0, 600, 400);
+				for(var i=0;i<triangleData.length;i++){
+					ctx.beginPath();
+					ctx.moveTo(triangleData[i].centreX, triangleData[i].centreY - triangleData[i].radius);
+					ctx.lineTo(triangleData[i].centreX - ((triangleData[i].radius*3)/4), triangleData[i].centreY + (triangleData[i].radius/3));
+					ctx.lineTo(triangleData[i].centreX + ((triangleData[i].radius*3)/4), triangleData[i].centreY + (triangleData[i].radius/3));
+					ctx.lineTo(triangleData[i].centreX, triangleData[i].centreY - triangleData[i].radius);
+					ctx.stroke();
+					ctx.fillStyle = triangleData[i].color;
+					ctx.fill();
+				}
+			}
+
+			function clearTriangle(e){
+				var pX = e.clientX - c.offsetLeft;
+				var pY = e.clientY - c.offsetTop;
+				for(var i=triangleData.length-1;i>=0;i--){
+					var x1 = triangleData[i].centreX;
+					var x2 = triangleData[i].centreX - ((triangleData[i].radius*3)/4);
+					var x3 = triangleData[i].centreX + ((triangleData[i].radius*3)/4);
+					var y1 = triangleData[i].centreY - triangleData[i].radius;
+					var y2 = triangleData[i].centreY + (triangleData[i].radius/3);
+					var y3 = triangleData[i].centreY + (triangleData[i].radius/3);
+					if(checkPointInTriangle(x1, y1, x2, y2, x3, y3, pX, pY)){
+						triangleData.splice(i, 1);
+						break;
+					}
+					else{
+						continue;
+					}
+				}
+				drawCanvas();
+			}
+
+			function checkPointInTriangle(x1, y1, x2, y2, x3, y3, x, y)
+			{
+			 	var denominator = ((y2 - y3)*(x1 - x3) + (x3 - x2)*(y1 - y3));
+			 	var a = ((y2 - y3)*(x - x3) + (x3 - x2)*(y - y3)) / denominator;
+			 	var b = ((y3 - y1)*(x - x3) + (x1 - x3)*(y - y3)) / denominator;
+			 	var c = 1 - a - b;
+			 
+			 	return (0 <= a && a <= 1 && 0 <= b && b <= 1 && 0 <= c && c <= 1);
+			}
+		</script>
+	</body>
+</html>
