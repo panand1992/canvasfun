@@ -8,4 +8,4 @@
 
 4. User can drag an existing triangle
 
-5. Double click on any traingle will delete that triangle.
+5. Double click on any triangle will delete that triangle.
